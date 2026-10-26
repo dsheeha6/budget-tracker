@@ -27,6 +27,7 @@ export type MonthSummary = {
   totalRemaining: number;
   totalStatus: Status;
   hasCategories: boolean;
+  isPro: boolean;
 };
 
 /** Loads everything the dashboard needs for one month. */
@@ -38,7 +39,7 @@ export async function getMonthSummary(supabase: SupabaseClient, month: string): 
     supabase.from("categories").select("*").order("sort_order").order("name"),
     supabase.from("category_budgets").select("category_id, amount").eq("month", start),
     supabase.from("transactions").select("category_id, amount").gte("date", start).lt("date", end),
-    supabase.from("profiles").select("monthly_budget").single(),
+    supabase.from("profiles").select("monthly_budget, is_pro").single(),
   ]);
 
   const allCategories = (categoriesRes.data ?? []) as Category[];
@@ -75,6 +76,7 @@ export async function getMonthSummary(supabase: SupabaseClient, month: string): 
     totalRemaining: round(totalBudget - totalSpent),
     totalStatus: budgetStatus(totalSpent, totalBudget),
     hasCategories: allCategories.length > 0,
+    isPro: Boolean(profileRes.data?.is_pro),
   };
 }
 

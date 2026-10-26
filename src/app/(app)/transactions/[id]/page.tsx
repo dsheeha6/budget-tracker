@@ -22,10 +22,32 @@ export default async function EditTransactionPage({ params }: PageProps<"/transa
   );
   const back = `/transactions?m=${transaction.date.slice(0, 7)}`;
 
+  // Scanned purchases link to their receipt photo (private; link expires in an hour).
+  let receiptUrl: string | null = null;
+  if (transaction.receipt_id) {
+    const { data: receipt } = await supabase
+      .from("receipts")
+      .select("image_path")
+      .eq("id", transaction.receipt_id)
+      .maybeSingle();
+    if (receipt?.image_path) {
+      const { data: signed } = await supabase.storage.from("receipts").createSignedUrl(receipt.image_path, 3600);
+      receiptUrl = signed?.signedUrl ?? null;
+    }
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader title="Edit purchase" back={back} />
       <TransactionForm categories={categories} transaction={transaction} defaultDate={transaction.date} back={back} />
+      {receiptUrl && (
+        <a href={receiptUrl} target="_blank" rel="noreferrer" className="card flex items-center gap-3 py-3">
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}
+          <img src={receiptUrl} alt="Receipt" className="h-14 w-10 rounded object-cover" />
+          <span className="flex-1 font-medium">View receipt</span>
+          <span className="text-zinc-400">›</span>
+        </a>
+      )}
       <form action={deleteTransaction}>
         <input type="hidden" name="id" value={transaction.id} />
         <input type="hidden" name="back" value={back} />

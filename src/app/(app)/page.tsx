@@ -55,15 +55,26 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
         </>
       )}
 
-      {/* Quick add */}
+      {/* Quick add (+ scan for Pro) */}
       {summary.hasCategories && (
-        <Link
-          href={isCurrent ? "/transactions/new" : `/transactions/new?m=${month}`}
-          aria-label="Add a purchase"
-          className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-4xl leading-none text-white shadow-lg active:scale-95 dark:text-zinc-950"
-        >
-          +
-        </Link>
+        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-3">
+          {summary.isPro && (
+            <Link
+              href="/scan"
+              aria-label="Scan a receipt"
+              className="no-callout flex h-12 w-12 items-center justify-center rounded-full bg-card text-2xl shadow-lg active:scale-95"
+            >
+              📷
+            </Link>
+          )}
+          <Link
+            href={isCurrent ? "/transactions/new" : `/transactions/new?m=${month}`}
+            aria-label="Add a purchase"
+            className="no-callout flex h-16 w-16 items-center justify-center rounded-full bg-accent text-4xl leading-none text-white shadow-lg active:scale-95 dark:text-zinc-950"
+          >
+            +
+          </Link>
+        </div>
       )}
     </div>
   );
