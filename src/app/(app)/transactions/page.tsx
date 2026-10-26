@@ -116,7 +116,7 @@ function Chip({ href, active, children }: { href: string; active: boolean; child
   return (
     <Link
       href={href}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-sm whitespace-nowrap ${
+      className={`no-callout shrink-0 rounded-full px-4 py-2 text-sm whitespace-nowrap ${
         active ? "bg-foreground text-background" : "bg-card text-zinc-600 dark:text-zinc-300"
       }`}
     >

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import CategoryForm from "@/components/CategoryForm";
+import PageHeader from "@/components/PageHeader";
 import SubmitButton from "@/components/SubmitButton";
 import { requireUser } from "@/lib/supabase/server";
 import type { Category } from "@/lib/types";
@@ -15,10 +15,7 @@ export default async function EditCategoryPage({ params }: PageProps<"/categorie
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center gap-2">
-        <Link href="/categories" className="px-1 text-2xl text-zinc-500" aria-label="Back">‹</Link>
-        <h1 className="text-2xl font-bold">Edit category</h1>
-      </header>
+      <PageHeader title="Edit category" back="/categories" />
       <div className="card">
         <CategoryForm category={category} />
       </div>

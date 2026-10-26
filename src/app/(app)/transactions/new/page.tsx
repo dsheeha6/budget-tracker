@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import PageHeader from "@/components/PageHeader";
 import TransactionForm from "@/components/TransactionForm";
 import { currentMonth, isValidMonth, today } from "@/lib/dates";
 import { requireUser } from "@/lib/supabase/server";
@@ -20,14 +20,12 @@ export default async function NewTransactionPage({ searchParams }: PageProps<"/t
   // Adding from a past month on the dashboard → default to that month.
   const month = typeof m === "string" && isValidMonth(m) && m !== currentMonth() ? m : null;
   const defaultDate = month ? `${month}-01` : today();
+  const back = month ? `/?m=${month}` : "/";
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center gap-2">
-        <Link href="/" className="px-1 text-2xl text-zinc-500" aria-label="Back">‹</Link>
-        <h1 className="text-2xl font-bold">Add purchase</h1>
-      </header>
-      <TransactionForm categories={categories} defaultDate={defaultDate} back={month ? `/?m=${month}` : "/"} />
+      <PageHeader title="Add purchase" back={back} />
+      <TransactionForm categories={categories} defaultDate={defaultDate} back={back} />
     </div>
   );
 }

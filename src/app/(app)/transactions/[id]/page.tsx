@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import PageHeader from "@/components/PageHeader";
 import SubmitButton from "@/components/SubmitButton";
 import TransactionForm from "@/components/TransactionForm";
 import { requireUser } from "@/lib/supabase/server";
@@ -24,10 +24,7 @@ export default async function EditTransactionPage({ params }: PageProps<"/transa
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center gap-2">
-        <Link href={back} className="px-1 text-2xl text-zinc-500" aria-label="Back">‹</Link>
-        <h1 className="text-2xl font-bold">Edit purchase</h1>
-      </header>
+      <PageHeader title="Edit purchase" back={back} />
       <TransactionForm categories={categories} transaction={transaction} defaultDate={transaction.date} back={back} />
       <form action={deleteTransaction}>
         <input type="hidden" name="id" value={transaction.id} />

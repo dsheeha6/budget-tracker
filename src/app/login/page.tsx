@@ -48,6 +48,8 @@ export default function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6">
+      {/* eslint-disable-next-line @next/next/no-img-element -- tiny static icon */}
+      <img src="/icon-192.png" alt="" className="mb-4 h-16 w-16 rounded-2xl" />
       <h1 className="text-3xl font-bold">Budget</h1>
       <p className="mt-1 text-zinc-500">Sign in with your email. No password needed.</p>
 

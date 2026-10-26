@@ -24,10 +24,27 @@
   --font-sans: var(--font-geist-sans);
 }
 
+html {
+  /* No double-tap-to-zoom delay; pinch zoom still works. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   -webkit-tap-highlight-color: transparent;
+  /* Stops the whole app from rubber-banding like a web page. */
+  overscroll-behavior: none;
+}
+
+/* Buttons and tabs shouldn't select text or pop up the iOS link preview. */
+button,
+nav a,
+.no-callout {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Shared building blocks, kept here so pages stay readable. */
