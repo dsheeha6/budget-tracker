@@ -1,3 +1,9 @@
 [build]
   command = "npm run build"
   publish = ".next"
+
+# Turns Next.js server features (SSR, Server Actions, proxy) into Netlify
+# Functions. Netlify normally adds this automatically for Git deploys;
+# declaring it makes uploads from this folder use it too.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
