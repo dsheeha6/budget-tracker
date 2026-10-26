@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { monthStart, nextMonthStart } from "./dates";
-import type { Category } from "./types";
+import { monthlyIncome, type MonthlyIncome } from "./income";
+import type { Category, CategoryGroup, Profile } from "./types";
 
 export type Status = "none" | "green" | "yellow" | "red";
 
@@ -20,14 +21,27 @@ export type CategorySummary = Category & {
   status: Status;
 };
 
+export type GroupSummary = CategoryGroup & {
+  categories: CategorySummary[];
+  budget: number;
+  spent: number;
+  remaining: number;
+  status: Status;
+};
+
+/** What the dashboard lists, in order: loose categories and folders mixed by sort order. */
+export type Section = { kind: "category"; category: CategorySummary } | { kind: "group"; group: GroupSummary };
+
 export type MonthSummary = {
   categories: CategorySummary[];
+  sections: Section[];
   totalSpent: number;
   totalBudget: number;
   totalRemaining: number;
   totalStatus: Status;
   hasCategories: boolean;
   isPro: boolean;
+  income: MonthlyIncome | null;
 };
 
 /** Loads everything the dashboard needs for one month. */
@@ -35,11 +49,15 @@ export async function getMonthSummary(supabase: SupabaseClient, month: string): 
   const start = monthStart(month);
   const end = nextMonthStart(month);
 
-  const [categoriesRes, budgetsRes, transactionsRes, profileRes] = await Promise.all([
+  const [categoriesRes, groupsRes, budgetsRes, transactionsRes, profileRes] = await Promise.all([
     supabase.from("categories").select("*").order("sort_order").order("name"),
+    supabase.from("category_groups").select("*").order("sort_order").order("name"),
     supabase.from("category_budgets").select("category_id, amount").eq("month", start),
     supabase.from("transactions").select("category_id, amount").gte("date", start).lt("date", end),
-    supabase.from("profiles").select("monthly_budget, is_pro").single(),
+    supabase
+      .from("profiles")
+      .select("monthly_budget, is_pro, pay_amount, pay_frequency, retirement_per_paycheck, tax_per_paycheck")
+      .single(),
   ]);
 
   const allCategories = (categoriesRes.data ?? []) as Category[];
@@ -69,8 +87,30 @@ export async function getMonthSummary(supabase: SupabaseClient, month: string): 
   const totalBudget =
     overall != null ? Number(overall) : round(categories.reduce((sum, c) => sum + c.budget, 0));
 
+  // Folders: totals of the categories inside them. Empty folders are skipped.
+  const groups = ((groupsRes.data ?? []) as CategoryGroup[])
+    .map((g) => {
+      const inside = categories.filter((c) => c.group_id === g.id);
+      const budget = round(inside.reduce((sum, c) => sum + c.budget, 0));
+      const spent = round(inside.reduce((sum, c) => sum + c.spent, 0));
+      return { ...g, categories: inside, budget, spent, remaining: round(budget - spent), status: budgetStatus(spent, budget) };
+    })
+    .filter((g) => g.categories.length > 0);
+  const groupIds = new Set(groups.map((g) => g.id));
+
+  const sections: Section[] = [
+    ...categories
+      .filter((c) => !c.group_id || !groupIds.has(c.group_id))
+      .map((category) => ({ kind: "category" as const, category, order: category.sort_order })),
+    ...groups.map((group) => ({ kind: "group" as const, group, order: group.sort_order })),
+  ]
+    .sort((a, b) => a.order - b.order)
+    .map((s) => (s.kind === "category" ? { kind: s.kind, category: s.category } : { kind: s.kind, group: s.group }));
+
   return {
     categories,
+    sections,
+    income: profileRes.data ? monthlyIncome(profileRes.data as Profile) : null,
     totalSpent,
     totalBudget,
     totalRemaining: round(totalBudget - totalSpent),

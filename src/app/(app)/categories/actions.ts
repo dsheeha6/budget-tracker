@@ -32,6 +32,7 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
   const name = String(formData.get("name") ?? "").trim();
   const icon = String(formData.get("icon") ?? "").trim() || "💸";
   const color = String(formData.get("color") ?? "#6366f1");
+  const groupId = String(formData.get("group_id") ?? "") || null;
   const budgetInput = String(formData.get("monthly_budget") ?? "").trim();
   const monthlyBudget = budgetInput === "" ? 0 : parseMoney(budgetInput);
 
@@ -41,7 +42,7 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
   if (!/^#[0-9a-f]{6}$/i.test(color)) return { error: "Pick a color." };
   if (Number.isNaN(monthlyBudget) || monthlyBudget < 0) return { error: "Budget must be a positive number." };
 
-  const fields = { name, icon, color, monthly_budget: monthlyBudget };
+  const fields = { name, icon, color, monthly_budget: monthlyBudget, group_id: groupId };
 
   if (id) {
     const { data: existing } = await supabase
@@ -90,6 +91,38 @@ export async function deleteCategory(formData: FormData) {
     await supabase.from("categories").update({ archived: true }).eq("id", id);
   }
 
+  revalidatePath("/", "layout");
+  redirect("/categories");
+}
+
+/** Creates a folder, or renames one when the form includes an id. */
+export async function saveGroup(_prev: FormState, formData: FormData): Promise<FormState> {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const icon = String(formData.get("icon") ?? "").trim() || "📁";
+  if (!name) return { error: "Give the folder a name." };
+  if (name.length > 50) return { error: "Name is too long (50 characters max)." };
+  if (icon.length > 16) return { error: "Use a single emoji for the icon." };
+
+  if (id) {
+    const { error } = await supabase.from("category_groups").update({ name, icon }).eq("id", id);
+    if (error) return { error: error.message };
+  } else {
+    // Folders share the ordering with loose categories on the dashboard.
+    const { count } = await supabase.from("categories").select("id", { count: "exact", head: true });
+    const { error } = await supabase.from("category_groups").insert({ name, icon, sort_order: count ?? 0 });
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/categories");
+}
+
+/** Deletes a folder. Its categories stay, just no longer in a folder. */
+export async function deleteGroup(formData: FormData) {
+  const { supabase } = await requireUser();
+  await supabase.from("category_groups").delete().eq("id", String(formData.get("id")));
   revalidatePath("/", "layout");
   redirect("/categories");
 }

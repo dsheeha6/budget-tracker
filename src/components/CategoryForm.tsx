@@ -2,12 +2,20 @@
 
 import { saveCategory, type FormState } from "@/app/(app)/categories/actions";
 import SubmitButton from "@/components/SubmitButton";
-import type { Category } from "@/lib/types";
+import type { Category, CategoryGroup } from "@/lib/types";
 import { useFormAction } from "@/lib/useFormAction";
 
 const COLORS = ["#10b981", "#3b82f6", "#6366f1", "#a855f7", "#ec4899", "#ef4444", "#f97316", "#eab308", "#64748b"];
 
-export default function CategoryForm({ category }: { category?: Category }) {
+export default function CategoryForm({
+  category,
+  groups,
+  defaultGroupId,
+}: {
+  category?: Category;
+  groups: CategoryGroup[];
+  defaultGroupId?: string;
+}) {
   const { state, pending, onSubmit } = useFormAction<FormState>(saveCategory, null);
 
   return (
@@ -39,6 +47,25 @@ export default function CategoryForm({ category }: { category?: Category }) {
           />
         </div>
       </div>
+
+      {groups.length > 0 && (
+        <div>
+          <label className="label" htmlFor="group_id">Folder</label>
+          <select
+            id="group_id"
+            name="group_id"
+            defaultValue={category?.group_id ?? defaultGroupId ?? ""}
+            className="input"
+          >
+            <option value="">No folder</option>
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.icon} {g.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label className="label" htmlFor="monthly_budget">Monthly budget</label>

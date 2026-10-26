@@ -6,14 +6,22 @@ import { saveReceipt } from "@/app/(app)/scan/actions";
 import CategoryPicker from "@/components/CategoryPicker";
 import { money, parseMoney } from "@/lib/money";
 import { splitByCategory } from "@/lib/receiptSplit";
-import type { Category } from "@/lib/types";
+import type { Category, CategoryGroup } from "@/lib/types";
 
 type Stage = "pick" | "reading" | "review";
 type ItemRow = { key: number; name: string; price: string; categoryId: string };
 
 // Photo → Claude reads it → you check everything → saved as one purchase or
 // split across categories. Nothing is added to your budget until you tap Save.
-export default function ReceiptScanner({ categories, today }: { categories: Category[]; today: string }) {
+export default function ReceiptScanner({
+  categories,
+  groups,
+  today,
+}: {
+  categories: Category[];
+  groups: CategoryGroup[];
+  today: string;
+}) {
   const [stage, setStage] = useState<Stage>("pick");
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -212,7 +220,7 @@ export default function ReceiptScanner({ categories, today }: { categories: Cate
       {mode === "single" && (
         <div>
           <span className="label">Category</span>
-          <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+          <CategoryPicker categories={categories} groups={groups} value={categoryId} onChange={setCategoryId} />
         </div>
       )}
 
@@ -276,10 +284,23 @@ export default function ReceiptScanner({ categories, today }: { categories: Cate
                 className="w-full rounded-lg bg-card px-2 py-2 text-base"
               >
                 <option value="">Pick a category…</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
-                  </option>
+                {categories
+                  .filter((c) => !c.group_id || !groups.some((g) => g.id === c.group_id))
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.icon} {c.name}
+                    </option>
+                  ))}
+                {groups.map((g) => (
+                  <optgroup key={g.id} label={`${g.icon} ${g.name}`}>
+                    {categories
+                      .filter((c) => c.group_id === g.id)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.icon} {c.name}
+                        </option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
             )}

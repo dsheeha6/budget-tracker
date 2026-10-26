@@ -4,18 +4,20 @@ import { useState } from "react";
 import { saveTransaction, type FormState } from "@/app/(app)/transactions/actions";
 import CategoryPicker from "@/components/CategoryPicker";
 import SubmitButton from "@/components/SubmitButton";
-import type { Category, Transaction } from "@/lib/types";
+import type { Category, CategoryGroup, Transaction } from "@/lib/types";
 import { useFormAction } from "@/lib/useFormAction";
 
 // Built for speed: amount is focused on open, one tap picks the category,
 // and everything else is optional.
 export default function TransactionForm({
   categories,
+  groups,
   transaction,
   defaultDate,
   back,
 }: {
   categories: Category[];
+  groups: CategoryGroup[];
   transaction?: Transaction;
   defaultDate: string;
   back: string;
@@ -47,7 +49,7 @@ export default function TransactionForm({
 
       <div>
         <span className="label">Category</span>
-        <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+        <CategoryPicker categories={categories} groups={groups} value={categoryId} onChange={setCategoryId} />
       </div>
 
       <div className="card space-y-3">

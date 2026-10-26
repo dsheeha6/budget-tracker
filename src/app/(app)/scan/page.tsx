@@ -3,13 +3,14 @@ import PageHeader from "@/components/PageHeader";
 import ReceiptScanner from "@/components/ReceiptScanner";
 import { today } from "@/lib/dates";
 import { requireUser } from "@/lib/supabase/server";
-import type { Category } from "@/lib/types";
+import type { Category, CategoryGroup } from "@/lib/types";
 
 export default async function ScanPage() {
   const { supabase } = await requireUser();
-  const [{ data: profile }, { data }] = await Promise.all([
+  const [{ data: profile }, { data }, { data: groups }] = await Promise.all([
     supabase.from("profiles").select("is_pro").single(),
     supabase.from("categories").select("*").eq("archived", false).order("sort_order").order("name"),
+    supabase.from("category_groups").select("*").order("sort_order").order("name"),
   ]);
   const categories = (data ?? []) as Category[];
 
@@ -32,7 +33,7 @@ export default async function ScanPage() {
   return (
     <div className="space-y-4">
       <PageHeader title="Scan receipt" back="/" />
-      <ReceiptScanner categories={categories} today={today()} />
+      <ReceiptScanner categories={categories} groups={(groups ?? []) as CategoryGroup[]} today={today()} />
     </div>
   );
 }

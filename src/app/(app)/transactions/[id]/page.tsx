@@ -3,16 +3,17 @@ import PageHeader from "@/components/PageHeader";
 import SubmitButton from "@/components/SubmitButton";
 import TransactionForm from "@/components/TransactionForm";
 import { requireUser } from "@/lib/supabase/server";
-import type { Category, Transaction } from "@/lib/types";
+import type { Category, CategoryGroup, Transaction } from "@/lib/types";
 import { deleteTransaction } from "../actions";
 
 export default async function EditTransactionPage({ params }: PageProps<"/transactions/[id]">) {
   const { id } = await params;
   const { supabase } = await requireUser();
 
-  const [txRes, catRes] = await Promise.all([
+  const [txRes, catRes, groupRes] = await Promise.all([
     supabase.from("transactions").select("*").eq("id", id).maybeSingle(),
     supabase.from("categories").select("*").order("sort_order").order("name"),
+    supabase.from("category_groups").select("*").order("sort_order").order("name"),
   ]);
   if (!txRes.data) notFound();
   const transaction = txRes.data as Transaction;
@@ -39,7 +40,13 @@ export default async function EditTransactionPage({ params }: PageProps<"/transa
   return (
     <div className="space-y-4">
       <PageHeader title="Edit purchase" back={back} />
-      <TransactionForm categories={categories} transaction={transaction} defaultDate={transaction.date} back={back} />
+      <TransactionForm
+        categories={categories}
+        groups={(groupRes.data ?? []) as CategoryGroup[]}
+        transaction={transaction}
+        defaultDate={transaction.date}
+        back={back}
+      />
       {receiptUrl && (
         <a href={receiptUrl} target="_blank" rel="noreferrer" className="card flex items-center gap-3 py-3">
           {/* eslint-disable-next-line @next/next/no-img-element -- signed private URL */}

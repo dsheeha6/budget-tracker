@@ -4,13 +4,14 @@ import PageHeader from "@/components/PageHeader";
 import TransactionForm from "@/components/TransactionForm";
 import { currentMonth, isValidMonth, today } from "@/lib/dates";
 import { requireUser } from "@/lib/supabase/server";
-import type { Category } from "@/lib/types";
+import type { Category, CategoryGroup } from "@/lib/types";
 
 export default async function NewTransactionPage({ searchParams }: PageProps<"/transactions/new">) {
   const { supabase } = await requireUser();
   const { m } = await searchParams;
-  const [{ data }, { data: profile }] = await Promise.all([
+  const [{ data }, { data: groups }, { data: profile }] = await Promise.all([
     supabase.from("categories").select("*").eq("archived", false).order("sort_order").order("name"),
+    supabase.from("category_groups").select("*").order("sort_order").order("name"),
     supabase.from("profiles").select("is_pro").single(),
   ]);
   const categories = (data ?? []) as Category[];
@@ -31,7 +32,12 @@ export default async function NewTransactionPage({ searchParams }: PageProps<"/t
           <span className="text-zinc-400">›</span>
         </Link>
       )}
-      <TransactionForm categories={categories} defaultDate={defaultDate} back={back} />
+      <TransactionForm
+        categories={categories}
+        groups={(groups ?? []) as CategoryGroup[]}
+        defaultDate={defaultDate}
+        back={back}
+      />
     </div>
   );
 }
