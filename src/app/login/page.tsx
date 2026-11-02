@@ -52,7 +52,7 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       {/* eslint-disable-next-line @next/next/no-img-element -- tiny static icon */}
       <img src="/icon-192.png" alt="" className="mb-4 h-16 w-16 rounded-2xl" />
       <h1 className="text-3xl font-bold">Budget</h1>
-      <p className="mt-1 text-zinc-500">Sign in with your email. No password needed.</p>
+      <p className="mt-1 text-zinc-500">Sign in or create an account with your email. No password needed.</p>
 
       {step === "email" && linkFailed && (
         <p className="mt-4 text-sm text-zinc-500">
@@ -78,7 +78,8 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
       ) : (
         <form onSubmit={verifyCode} className="mt-8 space-y-3">
           <p className="text-sm text-zinc-500">
-            We sent a code to <span className="font-medium text-zinc-800 dark:text-zinc-200">{email}</span>.
+            We sent an email to <span className="font-medium text-zinc-800 dark:text-zinc-200">{email}</span>. Enter the
+            code from it, or tap the link in the email.
           </p>
           <input
             inputMode="numeric"
