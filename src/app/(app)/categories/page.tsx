@@ -17,7 +17,10 @@ export default async function CategoriesPage() {
   const archived = categories.filter((c) => c.archived);
   const total = active.reduce((sum, c) => sum + Number(c.monthly_budget), 0);
   const groupIds = new Set(groups.map((g) => g.id));
-  const loose = active.filter((c) => !c.group_id || !groupIds.has(c.group_id));
+  const activeIds = new Set(active.map((c) => c.id));
+  const mains = active.filter((c) => !c.parent_id || !activeIds.has(c.parent_id));
+  const loose = mains.filter((c) => !c.group_id || !groupIds.has(c.group_id));
+  const subsOf = (id: string) => active.filter((c) => c.parent_id === id);
 
   return (
     <div className="space-y-4">
@@ -40,11 +43,13 @@ export default async function CategoriesPage() {
 
       {active.length === 0 && <p className="card text-center text-zinc-500">No categories yet.</p>}
 
-      {loose.length > 0 && <CategoryList categories={loose} />}
+      {loose.length > 0 && <CategoryList categories={loose} subsOf={subsOf} />}
 
       {groups.map((g) => {
-        const inside = active.filter((c) => c.group_id === g.id);
-        const groupTotal = inside.reduce((sum, c) => sum + Number(c.monthly_budget), 0);
+        const inside = mains.filter((c) => c.group_id === g.id);
+        const groupTotal = inside
+          .flatMap((c) => [c, ...subsOf(c.id)])
+          .reduce((sum, c) => sum + Number(c.monthly_budget), 0);
         return (
           <section key={g.id}>
             <div className="mb-1 flex items-center justify-between px-1">
@@ -58,9 +63,9 @@ export default async function CategoriesPage() {
               </Link>
             </div>
             {inside.length > 0 ? (
-              <CategoryList categories={inside} />
+              <CategoryList categories={inside} subsOf={subsOf} />
             ) : (
-              <p className="card py-3 text-sm text-zinc-500">Empty folder. Tap + Add to put a category here.</p>
+              <p className="card py-3 text-sm text-zinc-500">Empty folder. Tap Edit to choose categories, or + Add to make a new one.</p>
             )}
           </section>
         );
@@ -90,26 +95,31 @@ export default async function CategoriesPage() {
   );
 }
 
-function CategoryList({ categories }: { categories: Category[] }) {
+function CategoryList({ categories, subsOf }: { categories: Category[]; subsOf: (id: string) => Category[] }) {
   return (
     <ul className="card divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
-      {categories.map((c) => (
-        <li key={c.id}>
-          <Link href={`/categories/${c.id}`} className="flex items-center gap-3 px-4 py-3 active:opacity-70">
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
-              style={{ backgroundColor: `${c.color}26` }}
+      {categories
+        .flatMap((c) => [{ c, isSub: false }, ...subsOf(c.id).map((s) => ({ c: s, isSub: true }))])
+        .map(({ c, isSub }) => (
+          <li key={c.id}>
+            <Link
+              href={`/categories/${c.id}`}
+              className={`flex items-center gap-3 py-3 pr-4 active:opacity-70 ${isSub ? "pl-10" : "pl-4"}`}
             >
-              {c.icon}
-            </span>
-            <span className="flex-1 truncate font-medium">{c.name}</span>
-            <span className="text-zinc-500">
-              {Number(c.monthly_budget) > 0 ? moneyShort(Number(c.monthly_budget)) : "No budget"}
-            </span>
-            <span className="text-zinc-400">›</span>
-          </Link>
-        </li>
-      ))}
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-full text-lg"
+                style={{ backgroundColor: `${c.color}26` }}
+              >
+                {c.icon}
+              </span>
+              <span className="flex-1 truncate font-medium">{c.name}</span>
+              <span className="text-zinc-500">
+                {Number(c.monthly_budget) > 0 ? moneyShort(Number(c.monthly_budget)) : "No budget"}
+              </span>
+              <span className="text-zinc-400">›</span>
+            </Link>
+          </li>
+        ))}
     </ul>
   );
 }

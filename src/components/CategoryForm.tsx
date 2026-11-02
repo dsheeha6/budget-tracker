@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { saveCategory, type FormState } from "@/app/(app)/categories/actions";
 import SubmitButton from "@/components/SubmitButton";
 import type { Category, CategoryGroup } from "@/lib/types";
@@ -11,12 +12,19 @@ export default function CategoryForm({
   category,
   groups,
   defaultGroupId,
+  mains,
+  defaultParentId,
+  hasSubs = false,
 }: {
   category?: Category;
   groups: CategoryGroup[];
   defaultGroupId?: string;
+  mains: Category[]; // categories this one could go under
+  defaultParentId?: string;
+  hasSubs?: boolean;
 }) {
   const { state, pending, onSubmit } = useFormAction<FormState>(saveCategory, null);
+  const [parentId, setParentId] = useState(category?.parent_id ?? defaultParentId ?? "");
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -48,7 +56,27 @@ export default function CategoryForm({
         </div>
       </div>
 
-      {groups.length > 0 && (
+      {!hasSubs && mains.length > 0 && (
+        <div>
+          <label className="label" htmlFor="parent_id">Sub category of</label>
+          <select
+            id="parent_id"
+            name="parent_id"
+            value={parentId}
+            onChange={(e) => setParentId(e.target.value)}
+            className="input"
+          >
+            <option value="">Nothing (main category)</option>
+            {mains.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.icon} {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {groups.length > 0 && !parentId && (
         <div>
           <label className="label" htmlFor="group_id">Folder</label>
           <select

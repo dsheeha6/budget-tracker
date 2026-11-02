@@ -32,7 +32,9 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
   const name = String(formData.get("name") ?? "").trim();
   const icon = String(formData.get("icon") ?? "").trim() || "💸";
   const color = String(formData.get("color") ?? "#6366f1");
-  const groupId = String(formData.get("group_id") ?? "") || null;
+  const parentId = String(formData.get("parent_id") ?? "") || null;
+  // A sub category lives wherever its main category does.
+  const groupId = parentId ? null : String(formData.get("group_id") ?? "") || null;
   const budgetInput = String(formData.get("monthly_budget") ?? "").trim();
   const monthlyBudget = budgetInput === "" ? 0 : parseMoney(budgetInput);
 
@@ -42,7 +44,22 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
   if (!/^#[0-9a-f]{6}$/i.test(color)) return { error: "Pick a color." };
   if (Number.isNaN(monthlyBudget) || monthlyBudget < 0) return { error: "Budget must be a positive number." };
 
-  const fields = { name, icon, color, monthly_budget: monthlyBudget, group_id: groupId };
+  // Sub categories only go one level deep.
+  if (parentId) {
+    if (parentId === id) return { error: "A category can't be its own sub category." };
+    const { data: parent } = await supabase.from("categories").select("parent_id").eq("id", parentId).maybeSingle();
+    if (!parent) return { error: "Main category not found." };
+    if (parent.parent_id) return { error: "That's already a sub category. Pick a main category." };
+    if (id) {
+      const { count } = await supabase
+        .from("categories")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_id", id);
+      if (count) return { error: "This category has its own sub categories, so it can't be one." };
+    }
+  }
+
+  const fields = { name, icon, color, monthly_budget: monthlyBudget, group_id: groupId, parent_id: parentId };
 
   if (id) {
     const { data: existing } = await supabase
@@ -89,18 +106,21 @@ export async function deleteCategory(formData: FormData) {
   if (error?.code === "23503") {
     // Still referenced by transactions → archive instead.
     await supabase.from("categories").update({ archived: true }).eq("id", id);
+    // Its subs stay active as regular categories, same as when it's truly deleted.
+    await supabase.from("categories").update({ parent_id: null }).eq("parent_id", id);
   }
 
   revalidatePath("/", "layout");
   redirect("/categories");
 }
 
-/** Creates a folder, or renames one when the form includes an id. */
+/** Creates a folder, or updates one when the form includes an id. The ticked categories end up in it. */
 export async function saveGroup(_prev: FormState, formData: FormData): Promise<FormState> {
   const { supabase } = await requireUser();
-  const id = String(formData.get("id") ?? "");
+  let id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   const icon = String(formData.get("icon") ?? "").trim() || "📁";
+  const ticked = formData.getAll("category_ids").map(String);
   if (!name) return { error: "Give the folder a name." };
   if (name.length > 50) return { error: "Name is too long (50 characters max)." };
   if (icon.length > 16) return { error: "Use a single emoji for the icon." };
@@ -111,7 +131,29 @@ export async function saveGroup(_prev: FormState, formData: FormData): Promise<F
   } else {
     // Folders share the ordering with loose categories on the dashboard.
     const { count } = await supabase.from("categories").select("id", { count: "exact", head: true });
-    const { error } = await supabase.from("category_groups").insert({ name, icon, sort_order: count ?? 0 });
+    const { data, error } = await supabase
+      .from("category_groups")
+      .insert({ name, icon, sort_order: count ?? 0 })
+      .select("id")
+      .single();
+    if (error) return { error: error.message };
+    id = data.id;
+  }
+
+  // Unticked categories leave the folder. Archived ones aren't on the form, so they stay put.
+  const { data: current, error: currentError } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("group_id", id)
+    .eq("archived", false);
+  if (currentError) return { error: currentError.message };
+  const removed = (current ?? []).map((c) => c.id).filter((c) => !ticked.includes(c));
+  if (removed.length) {
+    const { error } = await supabase.from("categories").update({ group_id: null }).in("id", removed);
+    if (error) return { error: error.message };
+  }
+  if (ticked.length) {
+    const { error } = await supabase.from("categories").update({ group_id: id }).in("id", ticked);
     if (error) return { error: error.message };
   }
 

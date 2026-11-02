@@ -2,7 +2,7 @@ import Link from "next/link";
 import MonthSwitcher from "@/components/MonthSwitcher";
 import ProgressBar, { statusColors } from "@/components/ProgressBar";
 import SubmitButton from "@/components/SubmitButton";
-import { getMonthSummary, type CategorySummary, type GroupSummary, type Status } from "@/lib/budget";
+import { getMonthSummary, type CategorySummary, type CategoryTotal, type GroupSummary, type Status } from "@/lib/budget";
 import type { MonthlyIncome } from "@/lib/income";
 import { currentMonth, daysLeft, monthParam } from "@/lib/dates";
 import { money, moneyShort } from "@/lib/money";
@@ -89,7 +89,20 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   );
 }
 
-function CategoryCard({ category: c, month }: { category: CategorySummary; month: string }) {
+function CategoryCard({ category: c, month }: { category: CategoryTotal; month: string }) {
+  if (c.subs.length > 0) {
+    return (
+      <ExpandingCard
+        icon={c.icon}
+        iconColor={c.color}
+        name={c.name}
+        count={c.subs.length}
+        totals={c}
+        rows={[{ row: c.own, isSub: false }, ...c.subs.map((row) => ({ row, isSub: true }))]}
+        month={month}
+      />
+    );
+  }
   return (
     <Link href={`/transactions?c=${c.id}&m=${month}`} className="card block space-y-2 active:opacity-80">
       <div className="flex items-center justify-between gap-3">
@@ -118,36 +131,75 @@ function CategoryCard({ category: c, month }: { category: CategorySummary; month
   );
 }
 
-// A folder (e.g. Subscriptions): totals on the outside, tap to see each one.
 function GroupCard({ group, month }: { group: GroupSummary; month: string }) {
+  return (
+    <ExpandingCard
+      icon={group.icon}
+      name={group.name}
+      count={group.categories.length}
+      totals={group}
+      rows={group.categories.flatMap((c) => [
+        { row: c.own, isSub: false },
+        ...c.subs.map((row) => ({ row, isSub: true })),
+      ])}
+      month={month}
+    />
+  );
+}
+
+// A folder (e.g. Subscriptions) or a category with subs (e.g. Food): totals on
+// the outside, tap to see each one.
+function ExpandingCard({
+  icon,
+  iconColor,
+  name,
+  count,
+  totals,
+  rows,
+  month,
+}: {
+  icon: string;
+  iconColor?: string;
+  name: string;
+  count: number;
+  totals: { spent: number; budget: number; remaining: number; status: Status };
+  rows: { row: CategorySummary; isSub: boolean }[];
+  month: string;
+}) {
   return (
     <details className="card group/folder p-0">
       <summary className="block cursor-pointer list-none space-y-2 p-4 [&::-webkit-details-marker]:hidden">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-lg dark:bg-zinc-800">
-              {group.icon}
+            <span
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-lg dark:bg-zinc-800"
+              style={iconColor ? { backgroundColor: `${iconColor}26` } : undefined}
+            >
+              {icon}
             </span>
-            <span className="truncate font-medium">{group.name}</span>
-            <span className="shrink-0 text-xs text-zinc-400">{group.categories.length}</span>
+            <span className="truncate font-medium">{name}</span>
+            <span className="shrink-0 text-xs text-zinc-400">{count}</span>
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm">
             <span>
-              <span className="font-semibold">{money(group.spent)}</span>
-              {group.budget > 0 && <span className="text-zinc-500"> / {moneyShort(group.budget)}</span>}
+              <span className="font-semibold">{money(totals.spent)}</span>
+              {totals.budget > 0 && <span className="text-zinc-500"> / {moneyShort(totals.budget)}</span>}
             </span>
             <span className="text-zinc-400 transition-transform group-open/folder:rotate-90">›</span>
           </div>
         </div>
-        <ProgressBar spent={group.spent} budget={group.budget} status={group.status} />
+        <ProgressBar spent={totals.spent} budget={totals.budget} status={totals.status} />
         <div className="text-sm">
-          <StatusText status={group.status} remaining={group.remaining} />
+          <StatusText status={totals.status} remaining={totals.remaining} />
         </div>
       </summary>
       <ul className="divide-y divide-zinc-200 border-t border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
-        {group.categories.map((c) => (
+        {rows.map(({ row: c, isSub }) => (
           <li key={c.id}>
-            <Link href={`/transactions?c=${c.id}&m=${month}`} className="block space-y-1.5 px-4 py-3 active:opacity-70">
+            <Link
+              href={`/transactions?c=${c.id}&m=${month}`}
+              className={`block space-y-1.5 py-3 pr-4 active:opacity-70 ${isSub ? "pl-8" : "pl-4"}`}
+            >
               <div className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate">
                   {c.icon} {c.name}

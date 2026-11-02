@@ -21,8 +21,14 @@ export type CategorySummary = Category & {
   status: Status;
 };
 
+/** A main category with its sub categories added in. `own` is just the category itself. */
+export type CategoryTotal = CategorySummary & {
+  own: CategorySummary;
+  subs: CategorySummary[];
+};
+
 export type GroupSummary = CategoryGroup & {
-  categories: CategorySummary[];
+  categories: CategoryTotal[];
   budget: number;
   spent: number;
   remaining: number;
@@ -30,7 +36,7 @@ export type GroupSummary = CategoryGroup & {
 };
 
 /** What the dashboard lists, in order: loose categories and folders mixed by sort order. */
-export type Section = { kind: "category"; category: CategorySummary } | { kind: "group"; group: GroupSummary };
+export type Section = { kind: "category"; category: CategoryTotal } | { kind: "group"; group: GroupSummary };
 
 export type MonthSummary = {
   categories: CategorySummary[];
@@ -87,10 +93,22 @@ export async function getMonthSummary(supabase: SupabaseClient, month: string): 
   const totalBudget =
     overall != null ? Number(overall) : round(categories.reduce((sum, c) => sum + c.budget, 0));
 
+  // Main categories, with their subs added in. The totals above already count
+  // every category once, so this is only for display.
+  const shownIds = new Set(categories.map((c) => c.id));
+  const mains: CategoryTotal[] = categories
+    .filter((c) => !c.parent_id || !shownIds.has(c.parent_id))
+    .map((c) => {
+      const subs = categories.filter((s) => s.parent_id === c.id);
+      const budget = round(c.budget + subs.reduce((sum, s) => sum + s.budget, 0));
+      const spent = round(c.spent + subs.reduce((sum, s) => sum + s.spent, 0));
+      return { ...c, budget, spent, remaining: round(budget - spent), status: budgetStatus(spent, budget), own: c, subs };
+    });
+
   // Folders: totals of the categories inside them. Empty folders are skipped.
   const groups = ((groupsRes.data ?? []) as CategoryGroup[])
     .map((g) => {
-      const inside = categories.filter((c) => c.group_id === g.id);
+      const inside = mains.filter((c) => c.group_id === g.id);
       const budget = round(inside.reduce((sum, c) => sum + c.budget, 0));
       const spent = round(inside.reduce((sum, c) => sum + c.spent, 0));
       return { ...g, categories: inside, budget, spent, remaining: round(budget - spent), status: budgetStatus(spent, budget) };
@@ -99,7 +117,7 @@ export async function getMonthSummary(supabase: SupabaseClient, month: string): 
   const groupIds = new Set(groups.map((g) => g.id));
 
   const sections: Section[] = [
-    ...categories
+    ...mains
       .filter((c) => !c.group_id || !groupIds.has(c.group_id))
       .map((category) => ({ kind: "category" as const, category, order: category.sort_order })),
     ...groups.map((group) => ({ kind: "group" as const, group, order: group.sort_order })),

@@ -16,13 +16,19 @@ export default function CategoryPicker({
   onChange: (id: string) => void;
 }) {
   const groupIds = new Set(groups.map((g) => g.id));
-  const loose = categories.filter((c) => !c.group_id || !groupIds.has(c.group_id));
+  // A sub category shows in its main category's folder.
+  const folderOf = (c: Category) =>
+    c.parent_id ? (categories.find((m) => m.id === c.parent_id)?.group_id ?? null) : c.group_id;
+  const loose = categories.filter((c) => {
+    const folder = folderOf(c);
+    return !folder || !groupIds.has(folder);
+  });
   const sections = [
     { key: "loose", title: null as string | null, items: loose },
     ...groups.map((g) => ({
       key: g.id,
       title: `${g.icon} ${g.name}`,
-      items: categories.filter((c) => c.group_id === g.id),
+      items: categories.filter((c) => folderOf(c) === g.id),
     })),
   ].filter((s) => s.items.length > 0);
 

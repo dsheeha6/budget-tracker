@@ -28,6 +28,7 @@ export type Category = {
   id: string;
   user_id: string;
   group_id: string | null;
+  parent_id: string | null; // set on a sub category, e.g. Coffee under Food
   name: string;
   icon: string;
   color: string;
