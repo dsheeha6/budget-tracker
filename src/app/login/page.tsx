@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 // Two steps: enter email → enter the code from the email.
 // A code (instead of only a magic link) matters on iPhone: tapping a link
 // opens Safari, not the home-screen app, so the app would stay logged out.
-export default function LoginPage() {
+export default function LoginPage({ searchParams }: PageProps<"/login">) {
+  const linkFailed = use(searchParams).error === "link";
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -52,6 +53,12 @@ export default function LoginPage() {
       <img src="/icon-192.png" alt="" className="mb-4 h-16 w-16 rounded-2xl" />
       <h1 className="text-3xl font-bold">Budget</h1>
       <p className="mt-1 text-zinc-500">Sign in with your email. No password needed.</p>
+
+      {step === "email" && linkFailed && (
+        <p className="mt-4 text-sm text-zinc-500">
+          That link couldn&apos;t sign you in on this browser. Enter your email to get a code instead.
+        </p>
+      )}
 
       {step === "email" ? (
         <form onSubmit={sendCode} className="mt-8 space-y-3">
