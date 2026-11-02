@@ -56,7 +56,7 @@ export default async function TransactionsPage({ searchParams }: PageProps<"/tra
       <MonthSwitcher month={month} basePath="/transactions" params={categoryFilter ? { c: categoryFilter } : {}} />
 
       {/* Category filter chips */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
         <Chip href={filterHref("")} active={!categoryFilter}>All</Chip>
         {chipCategories.map((c) => (
           <Chip key={c.id} href={filterHref(c.id)} active={c.id === categoryFilter}>

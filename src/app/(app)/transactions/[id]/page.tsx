@@ -38,7 +38,7 @@ export default async function EditTransactionPage({ params }: PageProps<"/transa
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader title="Edit purchase" back={back} />
       <TransactionForm
         categories={categories}

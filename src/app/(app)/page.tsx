@@ -24,41 +24,46 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
         <EmptyState />
       ) : (
         <>
-          {/* Total card */}
-          <section className="card space-y-3">
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="text-sm text-zinc-500">Spent</div>
-                <div className="text-4xl font-bold tracking-tight">{money(summary.totalSpent)}</div>
-              </div>
-              <div className="text-right text-sm text-zinc-500">
-                of {moneyShort(summary.totalBudget)}
-              </div>
+          {/* Side by side on desktop: totals on the left, categories on the right */}
+          <div className="space-y-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-4 lg:space-y-0">
+            <div className="space-y-4">
+              {/* Total card */}
+              <section className="card space-y-3">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="text-sm text-zinc-500">Spent</div>
+                    <div className="text-4xl font-bold tracking-tight">{money(summary.totalSpent)}</div>
+                  </div>
+                  <div className="text-right text-sm text-zinc-500">
+                    of {moneyShort(summary.totalBudget)}
+                  </div>
+                </div>
+                <ProgressBar spent={summary.totalSpent} budget={summary.totalBudget} status={summary.totalStatus} />
+                <div className="flex justify-between text-sm">
+                  <StatusText status={summary.totalStatus} remaining={summary.totalRemaining} />
+                  {isCurrent && (
+                    <span className="text-zinc-500">
+                      {days} {days === 1 ? "day" : "days"} left
+                      {summary.totalRemaining > 0 && days > 0 && ` · ${money(summary.totalRemaining / days)}/day`}
+                    </span>
+                  )}
+                </div>
+              </section>
+
+              {summary.income && <IncomeCard income={summary.income} budget={summary.totalBudget} spent={summary.totalSpent} />}
             </div>
-            <ProgressBar spent={summary.totalSpent} budget={summary.totalBudget} status={summary.totalStatus} />
-            <div className="flex justify-between text-sm">
-              <StatusText status={summary.totalStatus} remaining={summary.totalRemaining} />
-              {isCurrent && (
-                <span className="text-zinc-500">
-                  {days} {days === 1 ? "day" : "days"} left
-                  {summary.totalRemaining > 0 && days > 0 && ` · ${money(summary.totalRemaining / days)}/day`}
-                </span>
+
+            {/* Categories and folders */}
+            <section className="space-y-2 lg:col-span-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
+              {summary.sections.map((s) =>
+                s.kind === "category" ? (
+                  <CategoryCard key={s.category.id} category={s.category} month={month} />
+                ) : (
+                  <GroupCard key={s.group.id} group={s.group} month={month} />
+                ),
               )}
-            </div>
-          </section>
-
-          {summary.income && <IncomeCard income={summary.income} budget={summary.totalBudget} spent={summary.totalSpent} />}
-
-          {/* Categories and folders */}
-          <section className="space-y-2">
-            {summary.sections.map((s) =>
-              s.kind === "category" ? (
-                <CategoryCard key={s.category.id} category={s.category} month={month} />
-              ) : (
-                <GroupCard key={s.group.id} group={s.group} month={month} />
-              ),
-            )}
-          </section>
+            </section>
+          </div>
           {/* Room to scroll the last card above the floating buttons */}
           <div className="h-24" aria-hidden />
         </>
@@ -66,7 +71,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
 
       {/* Quick add (+ scan for Pro) */}
       {summary.hasCategories && (
-        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex flex-col items-center gap-3">
+        <div className="fixed right-5 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-10 flex lg:right-8 lg:bottom-8 flex-col items-center gap-3">
           {summary.isPro && (
             <Link
               href="/scan"

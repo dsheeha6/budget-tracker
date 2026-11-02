@@ -13,7 +13,7 @@ export default async function NewCategoryPage({ searchParams }: PageProps<"/cate
   const defaultParentId = typeof parent === "string" ? parent : undefined;
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader
         title={defaultParentId ? "New sub category" : "New category"}
         back={defaultParentId ? `/categories/${defaultParentId}` : "/categories"}

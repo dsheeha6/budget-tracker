@@ -16,7 +16,7 @@ export default async function ScanPage() {
 
   if (!profile?.is_pro) {
     return (
-      <div className="space-y-4">
+      <div className="mx-auto max-w-xl space-y-4">
         <PageHeader title="Scan receipt" back="/" />
         <div className="card space-y-2 text-center">
           <div className="text-4xl">✨</div>
@@ -31,7 +31,7 @@ export default async function ScanPage() {
   if (categories.length === 0) redirect("/categories/new");
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader title="Scan receipt" back="/" />
       <ReceiptScanner categories={categories} groups={(groups ?? []) as CategoryGroup[]} today={today()} />
     </div>

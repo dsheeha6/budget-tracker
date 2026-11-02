@@ -18,32 +18,36 @@ export default async function SettingsPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Settings</h1>
 
-      {profile && (
-        <section className="card">
-          <IncomeForm profile={profile} />
-        </section>
-      )}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+        {profile && (
+          <section className="card">
+            <IncomeForm profile={profile} />
+          </section>
+        )}
 
-      <section className="card">
-        <OverallBudgetForm current={profile?.monthly_budget != null ? Number(profile.monthly_budget) : null} />
-      </section>
+        <div className="space-y-4">
+          <section className="card">
+            <OverallBudgetForm current={profile?.monthly_budget != null ? Number(profile.monthly_budget) : null} />
+          </section>
 
-      <section className="card space-y-3">
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Signed in as</span>
-          <span className="truncate pl-4 font-medium">{userData.user?.email}</span>
+          <section className="card space-y-3">
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Signed in as</span>
+              <span className="truncate pl-4 font-medium">{userData.user?.email}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-zinc-500">Plan</span>
+              <span className="font-medium">{profile?.is_pro ? "Pro ✨" : "Free"}</span>
+            </div>
+          </section>
+
+          <form action={signOut}>
+            <SubmitButton className="btn-secondary w-full" pendingText="Signing out…">
+              Sign out
+            </SubmitButton>
+          </form>
         </div>
-        <div className="flex justify-between">
-          <span className="text-zinc-500">Plan</span>
-          <span className="font-medium">{profile?.is_pro ? "Pro ✨" : "Free"}</span>
-        </div>
-      </section>
-
-      <form action={signOut}>
-        <SubmitButton className="btn-secondary w-full" pendingText="Signing out…">
-          Sign out
-        </SubmitButton>
-      </form>
+      </div>
     </div>
   );
 }

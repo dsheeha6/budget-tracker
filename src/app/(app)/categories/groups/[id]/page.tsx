@@ -18,7 +18,7 @@ export default async function EditGroupPage({ params }: PageProps<"/categories/g
   if (!group) notFound();
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader title="Edit folder" back="/categories" />
       <div className="card">
         <GroupForm group={group} categories={(catRes.data ?? []) as Category[]} groups={groups} />

@@ -43,54 +43,56 @@ export default async function CategoriesPage() {
 
       {active.length === 0 && <p className="card text-center text-zinc-500">No categories yet.</p>}
 
-      {loose.length > 0 && <CategoryList categories={loose} subsOf={subsOf} />}
+      <div className="space-y-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0">
+        {loose.length > 0 && <CategoryList categories={loose} subsOf={subsOf} />}
 
-      {groups.map((g) => {
-        const inside = mains.filter((c) => c.group_id === g.id);
-        const groupTotal = inside
-          .flatMap((c) => [c, ...subsOf(c.id)])
-          .reduce((sum, c) => sum + Number(c.monthly_budget), 0);
-        return (
-          <section key={g.id}>
-            <div className="mb-1 flex items-center justify-between px-1">
-              <Link href={`/categories/groups/${g.id}`} className="flex items-center gap-1 py-1 font-semibold">
-                <span>{g.icon}</span> {g.name}
-                <span className="text-sm font-normal text-zinc-400">· {moneyShort(groupTotal)}</span>
-                <span className="ml-1 text-xs font-normal text-accent">Edit</span>
-              </Link>
-              <Link href={`/categories/new?group=${g.id}`} className="px-2 py-1 text-sm font-semibold text-accent">
-                + Add
-              </Link>
-            </div>
-            {inside.length > 0 ? (
-              <CategoryList categories={inside} subsOf={subsOf} />
-            ) : (
-              <p className="card py-3 text-sm text-zinc-500">Empty folder. Tap Edit to choose categories, or + Add to make a new one.</p>
-            )}
+        {groups.map((g) => {
+          const inside = mains.filter((c) => c.group_id === g.id);
+          const groupTotal = inside
+            .flatMap((c) => [c, ...subsOf(c.id)])
+            .reduce((sum, c) => sum + Number(c.monthly_budget), 0);
+          return (
+            <section key={g.id}>
+              <div className="mb-1 flex items-center justify-between px-1">
+                <Link href={`/categories/groups/${g.id}`} className="flex items-center gap-1 py-1 font-semibold">
+                  <span>{g.icon}</span> {g.name}
+                  <span className="text-sm font-normal text-zinc-400">· {moneyShort(groupTotal)}</span>
+                  <span className="ml-1 text-xs font-normal text-accent">Edit</span>
+                </Link>
+                <Link href={`/categories/new?group=${g.id}`} className="px-2 py-1 text-sm font-semibold text-accent">
+                  + Add
+                </Link>
+              </div>
+              {inside.length > 0 ? (
+                <CategoryList categories={inside} subsOf={subsOf} />
+              ) : (
+                <p className="card py-3 text-sm text-zinc-500">Empty folder. Tap Edit to choose categories, or + Add to make a new one.</p>
+              )}
+            </section>
+          );
+        })}
+
+        {archived.length > 0 && (
+          <section>
+            <h2 className="mb-2 px-1 text-sm font-medium text-zinc-500">Archived</h2>
+            <ul className="card divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
+              {archived.map((c) => (
+                <li key={c.id} className="flex items-center gap-3 px-4 py-2">
+                  <span className="text-lg opacity-60">{c.icon}</span>
+                  <span className="flex-1 truncate text-zinc-500">{c.name}</span>
+                  <form action={setArchived}>
+                    <input type="hidden" name="id" value={c.id} />
+                    <input type="hidden" name="archived" value="false" />
+                    <SubmitButton className="py-2 text-sm font-semibold text-accent" pendingText="…">
+                      Restore
+                    </SubmitButton>
+                  </form>
+                </li>
+              ))}
+            </ul>
           </section>
-        );
-      })}
-
-      {archived.length > 0 && (
-        <section>
-          <h2 className="mb-2 px-1 text-sm font-medium text-zinc-500">Archived</h2>
-          <ul className="card divide-y divide-zinc-200 p-0 dark:divide-zinc-800">
-            {archived.map((c) => (
-              <li key={c.id} className="flex items-center gap-3 px-4 py-2">
-                <span className="text-lg opacity-60">{c.icon}</span>
-                <span className="flex-1 truncate text-zinc-500">{c.name}</span>
-                <form action={setArchived}>
-                  <input type="hidden" name="id" value={c.id} />
-                  <input type="hidden" name="archived" value="false" />
-                  <SubmitButton className="py-2 text-sm font-semibold text-accent" pendingText="…">
-                    Restore
-                  </SubmitButton>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+        )}
+      </div>
     </div>
   );
 }

@@ -11,7 +11,7 @@ export default async function NewGroupPage() {
   ]);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader title="New folder" back="/categories" />
       <div className="card">
         <GroupForm categories={(catRes.data ?? []) as Category[]} groups={(groupRes.data ?? []) as CategoryGroup[]} />

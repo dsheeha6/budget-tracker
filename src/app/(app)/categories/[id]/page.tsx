@@ -27,7 +27,7 @@ export default async function EditCategoryPage({ params }: PageProps<"/categorie
   const mains = active.filter((c) => !c.parent_id && c.id !== id);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader title="Edit category" back="/categories" />
       {!category.parent_id && (
         <section className="card space-y-2">

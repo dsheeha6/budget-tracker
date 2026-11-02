@@ -23,7 +23,7 @@ export default async function NewTransactionPage({ searchParams }: PageProps<"/t
   const back = month ? `/?m=${month}` : "/";
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto max-w-xl space-y-4">
       <PageHeader title="Add purchase" back={back} />
       {profile?.is_pro && (
         <Link href="/scan" className="card flex items-center gap-3 py-3 active:opacity-70">
