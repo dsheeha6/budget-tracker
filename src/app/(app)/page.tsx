@@ -1,5 +1,7 @@
 import Link from "next/link";
+import GoalCard from "@/components/GoalCard";
 import MonthSwitcher from "@/components/MonthSwitcher";
+import { getGoals, type GoalProgress } from "@/lib/goals";
 import ProgressBar, { statusColors } from "@/components/ProgressBar";
 import SubmitButton from "@/components/SubmitButton";
 import { getMonthSummary, type CategorySummary, type CategoryTotal, type GroupSummary, type Status } from "@/lib/budget";
@@ -12,7 +14,8 @@ import { addStarterCategories } from "./categories/actions";
 export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const { supabase } = await requireUser();
   const month = monthParam((await searchParams).m);
-  const summary = await getMonthSummary(supabase, month);
+  const [summary, goals] = await Promise.all([getMonthSummary(supabase, month), getGoals(supabase)]);
+  const activeGoals = goals.filter((g) => !g.archived);
   const days = daysLeft(month);
   const isCurrent = month === currentMonth();
 
@@ -51,6 +54,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
               </section>
 
               {summary.income && <IncomeCard income={summary.income} budget={summary.totalBudget} spent={summary.totalSpent} />}
+
+              <GoalsSummary goals={activeGoals} />
             </div>
 
             {/* Categories and folders */}
@@ -257,6 +262,41 @@ function IncomeCard({ income, budget, spent }: { income: MonthlyIncome; budget: 
             .filter(Boolean)
             .join(" · ")}
         </p>
+      )}
+    </section>
+  );
+}
+
+// Savings goals at a glance, or a nudge to make the first one.
+function GoalsSummary({ goals }: { goals: GoalProgress[] }) {
+  if (goals.length === 0) {
+    return (
+      <Link href="/goals/new" className="card flex items-center gap-3 active:opacity-80">
+        <span className="text-2xl">🎯</span>
+        <span className="flex-1">
+          <span className="block font-medium">Set a savings goal</span>
+          <span className="block text-sm text-zinc-500">Track money put aside for a trip, a car, a cushion.</span>
+        </span>
+        <span className="text-zinc-400">›</span>
+      </Link>
+    );
+  }
+  const thisMonth = goals.reduce((sum, g) => sum + g.savedThisMonth, 0);
+  return (
+    <section className="card space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">Goals</h2>
+        <Link href="/goals" className="text-sm text-zinc-500">
+          {money(thisMonth)} saved this month ›
+        </Link>
+      </div>
+      {goals.slice(0, 3).map((g) => (
+        <GoalCard key={g.id} goal={g} compact />
+      ))}
+      {goals.length > 3 && (
+        <Link href="/goals" className="block text-center text-sm font-semibold text-accent">
+          See all {goals.length} goals
+        </Link>
       )}
     </section>
   );

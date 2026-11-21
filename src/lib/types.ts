@@ -38,6 +38,31 @@ export type Category = {
   created_at: string;
 };
 
+/** Something to save up for, e.g. "Emergency fund". */
+export type SavingsGoal = {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string;
+  color: string;
+  target_amount: number;
+  target_date: string | null; // YYYY-MM-DD
+  archived: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
+/** Money put toward a goal (negative = taken back out). */
+export type GoalContribution = {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  amount: number;
+  date: string;
+  note: string | null;
+  created_at: string;
+};
+
 export type Transaction = {
   id: string;
   user_id: string;
