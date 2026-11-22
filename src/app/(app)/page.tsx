@@ -2,7 +2,9 @@ import Link from "next/link";
 import GoalCard from "@/components/GoalCard";
 import MonthSwitcher from "@/components/MonthSwitcher";
 import { getGoals, type GoalProgress } from "@/lib/goals";
-import ProgressBar, { statusColors } from "@/components/ProgressBar";
+import Logo from "@/components/Logo";
+import Penny from "@/components/Penny";
+import ProgressBar, { pastInBudget, statusColors, stayedInBudget } from "@/components/ProgressBar";
 import SubmitButton from "@/components/SubmitButton";
 import { getMonthSummary, type CategorySummary, type CategoryTotal, type GroupSummary, type Status } from "@/lib/budget";
 import type { MonthlyIncome } from "@/lib/income";
@@ -18,9 +20,21 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const activeGoals = goals.filter((g) => !g.archived);
   const days = daysLeft(month);
   const isCurrent = month === currentMonth();
+  const past = month < currentMonth();
+  // This month, anything that's over budget floats to the top.
+  const isOver = (s: (typeof summary.sections)[number]) =>
+    (s.kind === "category" ? s.category.status : s.group.status) === "red";
+  const sections = isCurrent
+    ? [...summary.sections.filter(isOver), ...summary.sections.filter((s) => !isOver(s))]
+    : summary.sections;
+  const overCount = summary.categories.filter((c) => c.status === "red").length;
+  const inBudgetCount = summary.categories.filter((c) => c.budget > 0 && c.status !== "red").length;
+  const budgetedCount = summary.categories.filter((c) => c.budget > 0).length;
 
   return (
     <div className="space-y-4">
+      {/* Wordmark on phones; desktop has it in the sidebar. */}
+      <Logo size={34} className="lg:hidden" />
       <MonthSwitcher month={month} basePath="/" />
 
       {!summary.hasCategories ? (
@@ -31,26 +45,46 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
           <div className="space-y-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-4 lg:space-y-0">
             <div className="space-y-4">
               {/* Total card */}
-              <section className="card space-y-3">
-                <div className="flex items-end justify-between">
+              <section className="card space-y-3" style={{ "--ink-radius": "24px" } as React.CSSProperties}>
+                <div className="flex items-end justify-between gap-2">
                   <div>
-                    <div className="text-sm text-zinc-500">Spent</div>
+                    <div className="font-hand font-semibold text-ink-soft">{past ? "Spent that month" : "Spent so far"}</div>
                     <div className="text-4xl font-bold tracking-tight">{money(summary.totalSpent)}</div>
+                    <div className="text-sm font-medium text-ink-soft">of {moneyShort(summary.totalBudget)} budget</div>
                   </div>
-                  <div className="text-right text-sm text-zinc-500">
-                    of {moneyShort(summary.totalBudget)}
-                  </div>
+                  {past && summary.totalBudget > 0 && summary.totalStatus !== "red" ? (
+                    <MonthStamp />
+                  ) : (
+                    <Penny size={88} mood={summary.totalStatus === "red" ? "worried" : "happy"} />
+                  )}
                 </div>
-                <ProgressBar spent={summary.totalSpent} budget={summary.totalBudget} status={summary.totalStatus} />
-                <div className="flex justify-between text-sm">
-                  <StatusText status={summary.totalStatus} remaining={summary.totalRemaining} />
+                <ProgressBar
+                  spent={summary.totalSpent}
+                  budget={summary.totalBudget}
+                  status={summary.totalStatus}
+                  past={past}
+                  size="lg"
+                />
+                <div className="flex justify-between gap-2 text-sm">
+                  <StatusText status={summary.totalStatus} remaining={summary.totalRemaining} past={past} />
                   {isCurrent && (
-                    <span className="text-zinc-500">
+                    <span className="text-right text-zinc-500">
                       {days} {days === 1 ? "day" : "days"} left
                       {summary.totalRemaining > 0 && days > 0 && ` · ${money(summary.totalRemaining / days)}/day`}
                     </span>
                   )}
+                  {past && budgetedCount > 0 && (
+                    <span className="text-right text-zinc-500">
+                      {inBudgetCount} of {budgetedCount} in budget
+                    </span>
+                  )}
                 </div>
+                <PennyLine
+                  status={summary.totalStatus}
+                  past={past}
+                  overCount={overCount}
+                  hasBudget={summary.totalBudget > 0}
+                />
               </section>
 
               {summary.income && <IncomeCard income={summary.income} budget={summary.totalBudget} spent={summary.totalSpent} />}
@@ -60,11 +94,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
 
             {/* Categories and folders */}
             <section className="space-y-2 lg:col-span-2 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3 lg:space-y-0">
-              {summary.sections.map((s) =>
+              {sections.map((s) =>
                 s.kind === "category" ? (
-                  <CategoryCard key={s.category.id} category={s.category} month={month} />
+                  <CategoryCard key={s.category.id} category={s.category} month={month} past={past} />
                 ) : (
-                  <GroupCard key={s.group.id} group={s.group} month={month} />
+                  <GroupCard key={s.group.id} group={s.group} month={month} past={past} />
                 ),
               )}
             </section>
@@ -81,7 +115,8 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             <Link
               href="/scan"
               aria-label="Scan a receipt"
-              className="no-callout flex h-12 w-12 items-center justify-center rounded-full bg-card text-2xl shadow-lg active:scale-95"
+              className="no-callout btn-secondary h-12 w-12 p-0 text-2xl"
+              style={{ "--ink-radius": "999px" } as React.CSSProperties}
             >
               📷
             </Link>
@@ -89,9 +124,17 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
           <Link
             href={isCurrent ? "/transactions/new" : `/transactions/new?m=${month}`}
             aria-label="Add a purchase"
-            className="no-callout flex h-16 w-16 items-center justify-center rounded-full bg-accent text-4xl leading-none text-white shadow-lg active:scale-95 dark:text-zinc-950"
+            className="no-callout btn-primary h-16 w-16 p-0"
+            style={{ "--ink-radius": "999px" } as React.CSSProperties}
           >
-            +
+            <svg viewBox="0 0 30 30" className="h-8 w-8" fill="none" aria-hidden>
+              <path
+                d="M15 4.5c.4 7 .2 14 .3 21M4.8 15.2c7-.4 13.6-.3 20.6 0"
+                stroke="currentColor"
+                strokeWidth={4}
+                strokeLinecap="round"
+              />
+            </svg>
           </Link>
         </div>
       )}
@@ -99,7 +142,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   );
 }
 
-function CategoryCard({ category: c, month }: { category: CategoryTotal; month: string }) {
+function CategoryCard({ category: c, month, past }: { category: CategoryTotal; month: string; past: boolean }) {
   if (c.subs.length > 0) {
     return (
       <ExpandingCard
@@ -110,6 +153,7 @@ function CategoryCard({ category: c, month }: { category: CategoryTotal; month: 
         totals={c}
         rows={[{ row: c.own, isSub: false }, ...c.subs.map((row) => ({ row, isSub: true }))]}
         month={month}
+        past={past}
       />
     );
   }
@@ -123,7 +167,7 @@ function CategoryCard({ category: c, month }: { category: CategoryTotal; month: 
           >
             {c.icon}
           </span>
-          <span className="truncate font-medium">
+          <span className="truncate font-hand font-bold">
             {c.name}
             {c.archived && <span className="ml-1 text-xs text-zinc-400">(archived)</span>}
           </span>
@@ -133,15 +177,15 @@ function CategoryCard({ category: c, month }: { category: CategoryTotal; month: 
           {c.budget > 0 && <span className="text-zinc-500"> / {moneyShort(c.budget)}</span>}
         </div>
       </div>
-      <ProgressBar spent={c.spent} budget={c.budget} status={c.status} />
+      <ProgressBar spent={c.spent} budget={c.budget} status={c.status} past={past} />
       <div className="text-sm">
-        <StatusText status={c.status} remaining={c.remaining} />
+        <StatusText status={c.status} remaining={c.remaining} past={past} />
       </div>
     </Link>
   );
 }
 
-function GroupCard({ group, month }: { group: GroupSummary; month: string }) {
+function GroupCard({ group, month, past }: { group: GroupSummary; month: string; past: boolean }) {
   return (
     <ExpandingCard
       icon={group.icon}
@@ -153,6 +197,7 @@ function GroupCard({ group, month }: { group: GroupSummary; month: string }) {
         ...c.subs.map((row) => ({ row, isSub: true })),
       ])}
       month={month}
+      past={past}
     />
   );
 }
@@ -167,6 +212,7 @@ function ExpandingCard({
   totals,
   rows,
   month,
+  past,
 }: {
   icon: string;
   iconColor?: string;
@@ -175,6 +221,7 @@ function ExpandingCard({
   totals: { spent: number; budget: number; remaining: number; status: Status };
   rows: { row: CategorySummary; isSub: boolean }[];
   month: string;
+  past: boolean;
 }) {
   return (
     <details className="card group/folder p-0">
@@ -187,7 +234,7 @@ function ExpandingCard({
             >
               {icon}
             </span>
-            <span className="truncate font-medium">{name}</span>
+            <span className="truncate font-hand font-bold">{name}</span>
             <span className="shrink-0 text-xs text-zinc-400">{count}</span>
           </div>
           <div className="flex shrink-0 items-center gap-2 text-sm">
@@ -198,9 +245,9 @@ function ExpandingCard({
             <span className="text-zinc-400 transition-transform group-open/folder:rotate-90">›</span>
           </div>
         </div>
-        <ProgressBar spent={totals.spent} budget={totals.budget} status={totals.status} />
+        <ProgressBar spent={totals.spent} budget={totals.budget} status={totals.status} past={past} />
         <div className="text-sm">
-          <StatusText status={totals.status} remaining={totals.remaining} />
+          <StatusText status={totals.status} remaining={totals.remaining} past={past} />
         </div>
       </summary>
       <ul className="divide-y divide-zinc-200 border-t border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
@@ -219,7 +266,7 @@ function ExpandingCard({
                   {c.budget > 0 && <span className="text-zinc-500"> / {moneyShort(c.budget)}</span>}
                 </span>
               </div>
-              <ProgressBar spent={c.spent} budget={c.budget} status={c.status} />
+              <ProgressBar spent={c.spent} budget={c.budget} status={c.status} past={past} />
             </Link>
           </li>
         ))}
@@ -302,7 +349,14 @@ function GoalsSummary({ goals }: { goals: GoalProgress[] }) {
   );
 }
 
-function StatusText({ status, remaining }: { status: Status; remaining: number }) {
+function StatusText({ status, remaining, past = false }: { status: Status; remaining: number; past?: boolean }) {
+  if (stayedInBudget(status, past)) {
+    return (
+      <span className={`font-semibold ${pastInBudget.text}`}>
+        Stayed in budget{remaining > 0 && ` · ${money(remaining)} to spare`}
+      </span>
+    );
+  }
   const text =
     status === "none"
       ? "No budget set"
@@ -313,7 +367,66 @@ function StatusText({ status, remaining }: { status: Status; remaining: number }
         : status === "yellow"
           ? `Getting close · ${money(remaining)} left`
           : `${money(remaining)} left`;
-  return <span className={`font-medium ${statusColors[status].text}`}>{text}</span>;
+  return <span className={`font-semibold ${statusColors[status].text}`}>{text}</span>;
+}
+
+// Penny's one-liner under the month total.
+function PennyLine({
+  status,
+  past,
+  overCount,
+  hasBudget,
+}: {
+  status: Status;
+  past: boolean;
+  overCount: number;
+  hasBudget: boolean;
+}) {
+  if (!hasBudget) return null;
+  let line: string;
+  let color = "text-brand-blue";
+  if (past) {
+    if (status === "red") {
+      line = "that one got away from us. new month, new start.";
+      color = "text-brand-red";
+    } else {
+      line = overCount === 0 ? "nailed it. every category in budget!" : "nailed it overall. nice work.";
+      color = "text-brand-green";
+    }
+  } else if (status === "red") {
+    line = "oops, we’re over. no stress, we’ll fix it.";
+    color = "text-brand-red";
+  } else if (overCount > 0) {
+    line = overCount === 1 ? "mostly good! one category’s a bit over" : `mostly good! ${overCount} categories are over`;
+  } else if (status === "yellow") {
+    line = "getting close. easy does it this week";
+    color = "text-ink-soft";
+  } else {
+    line = "we’re good! keep it up";
+  }
+  return <p className={`font-note text-2xl leading-none ${color}`}>{line}</p>;
+}
+
+// "Month closed · in budget" stamp for a finished month that stayed under.
+function MonthStamp() {
+  return (
+    <div
+      className="ink shrink-0 -rotate-6 px-3 py-1.5 text-center text-brand-green"
+      style={
+        {
+          "--ink-fill": "var(--green-tint)",
+          "--ink-radius": "12px",
+          "--ink-shadow": "0px",
+          "--ink-width": "2.5px",
+          "--ink": "var(--green)",
+        } as React.CSSProperties
+      }
+    >
+      <div className="text-[11px] font-bold tracking-[0.15em]">MONTH</div>
+      <div className="font-hand text-lg leading-tight font-bold">CLOSED</div>
+      <div className="font-note text-lg leading-none">in budget ✓</div>
+    </div>
+  );
 }
 
 function EmptyState() {

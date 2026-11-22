@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { saveTransaction, type FormState } from "@/app/(app)/transactions/actions";
 import CategoryPicker from "@/components/CategoryPicker";
+import OverspendAlert, { type Overspend } from "@/components/OverspendAlert";
+import { parseMoney } from "@/lib/money";
 import SubmitButton from "@/components/SubmitButton";
 import type { Category, CategoryGroup, Transaction } from "@/lib/types";
 import { useFormAction } from "@/lib/useFormAction";
@@ -15,19 +17,60 @@ export default function TransactionForm({
   transaction,
   defaultDate,
   back,
+  overspend,
 }: {
   categories: Category[];
   groups: CategoryGroup[];
   transaction?: Transaction;
   defaultDate: string;
   back: string;
+  /** This month's spent/budget per category. Given = Penny checks before going over. */
+  overspend?: { month: string; totals: Record<string, { spent: number; budget: number }> };
 }) {
   const { state, pending, onSubmit } = useFormAction<FormState>(saveTransaction, null);
   const [categoryId, setCategoryId] = useState(transaction?.category_id ?? "");
   const isRefund = transaction ? transaction.amount < 0 : false;
+  const [alert, setAlert] = useState<Overspend | null>(null);
+  const confirmed = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    if (!confirmed.current && overspend && !transaction) {
+      const data = new FormData(e.currentTarget);
+      const amount = parseMoney(data.get("amount"));
+      const totals = overspend.totals[categoryId];
+      const inThisMonth = String(data.get("date") ?? "").startsWith(overspend.month);
+      if (
+        totals &&
+        totals.budget > 0 &&
+        inThisMonth &&
+        data.get("refund") !== "on" &&
+        amount > 0 &&
+        totals.spent + amount > totals.budget
+      ) {
+        e.preventDefault();
+        const name = categories.find((c) => c.id === categoryId)?.name ?? "This category";
+        setAlert({ category: name, spent: totals.spent, budget: totals.budget, amount });
+        return;
+      }
+    }
+    confirmed.current = false;
+    onSubmit(e);
+  }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+      {alert && (
+        <OverspendAlert
+          info={alert}
+          onCancel={() => setAlert(null)}
+          onConfirm={() => {
+            setAlert(null);
+            confirmed.current = true;
+            formRef.current?.requestSubmit();
+          }}
+        />
+      )}
       {transaction && <input type="hidden" name="id" value={transaction.id} />}
       <input type="hidden" name="back" value={back} />
       <input type="hidden" name="category_id" value={categoryId} />

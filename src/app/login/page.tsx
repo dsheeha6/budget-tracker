@@ -2,6 +2,8 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import Logo from "@/components/Logo";
+import Penny from "@/components/Penny";
 import { createClient } from "@/lib/supabase/client";
 
 // Two steps: enter email → enter the code from the email.
@@ -49,10 +51,12 @@ export default function LoginPage({ searchParams }: PageProps<"/login">) {
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-6">
-      {/* eslint-disable-next-line @next/next/no-img-element -- tiny static icon */}
-      <img src="/icon-192.png" alt="" className="mb-4 h-16 w-16 rounded-2xl" />
-      <h1 className="text-3xl font-bold">Budget</h1>
-      <p className="mt-1 text-zinc-500">Sign in or create an account with your email. No password needed.</p>
+      <Penny size={120} className="-ml-2" />
+      <h1 className="mt-2">
+        <Logo size={64} />
+      </h1>
+      <p className="mt-2 font-note text-3xl leading-none text-brand-red">a money notebook that doesn’t judge you.</p>
+      <p className="mt-3 text-zinc-500">Sign in or create an account with your email. No password needed.</p>
 
       {step === "email" && linkFailed && (
         <p className="mt-4 text-sm text-zinc-500">

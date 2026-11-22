@@ -1,4 +1,7 @@
+import { cookies } from "next/headers";
+import { AppearancePicker, WarnToggle } from "@/components/AppearanceSettings";
 import IncomeForm from "@/components/IncomeForm";
+import { THEME_COOKIE, WARN_COOKIE, parseTheme } from "@/lib/theme";
 import OverallBudgetForm from "@/components/OverallBudgetForm";
 import SubmitButton from "@/components/SubmitButton";
 import { requireUser } from "@/lib/supabase/server";
@@ -6,6 +9,7 @@ import { signOut } from "./actions";
 
 export default async function SettingsPage() {
   const { supabase } = await requireUser();
+  const cookieStore = await cookies();
   const [{ data: profile }, { data: userData }] = await Promise.all([
     supabase
       .from("profiles")
@@ -26,6 +30,9 @@ export default async function SettingsPage() {
         )}
 
         <div className="space-y-4">
+          <AppearancePicker current={parseTheme(cookieStore.get(THEME_COOKIE)?.value)} />
+          <WarnToggle initial={cookieStore.get(WARN_COOKIE)?.value !== "off"} />
+
           <section className="card">
             <OverallBudgetForm current={profile?.monthly_budget != null ? Number(profile.monthly_budget) : null} />
           </section>

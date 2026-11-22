@@ -1,41 +1,133 @@
 @import "tailwindcss";
 
+/* Dark mode follows data-theme on <html>, which an inline script sets from the
+   phone's setting or the choice saved in Settings (see app/layout.tsx). */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ─── "penny" palette: muted primaries on warm paper, one warm ink ─────── */
 :root {
-  --background: #f4f4f5;
-  --foreground: #18181b;
-  --card: #ffffff;
-  --accent: #4f46e5;
+  --paper: #f3ecdd;
+  --card: #fbf7ee;
+  --grid: #e4d9c3;
+  --ink: #2a2521;
+  --ink-soft: #6b6259;
+  --ink-faint: #a99f91;
+  --line: #e2d8c4; /* dividers, quiet fills */
+  --blue: #4d6f9c; /* in budget, primary buttons */
+  --red: #c2553f; /* over budget, delete */
+  --yellow: #ddaa3b; /* savings goals */
+  --green: #004225; /* British racing green: stayed in budget (past months) */
+  --blue-tint: #d4deea;
+  --red-tint: #f1d3cb;
+  --yellow-tint: #f5e4bc;
+  --green-tint: #cfe0d4;
+  --on-accent: #fbf7ee;
+  --shadow: #2a2521;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #f4f4f5;
-    --card: #18181b;
-    --accent: #818cf8;
-  }
+[data-theme="dark"] {
+  --paper: #1b1916;
+  --card: #26221e;
+  --grid: #2b2723;
+  --ink: #efe7d8;
+  --ink-soft: #a99f91;
+  --ink-faint: #7d7469;
+  --line: #3a342e;
+  --blue: #8ba7cf;
+  --red: #e07a63;
+  --yellow: #e6be5a;
+  --green: #5e9e78;
+  --blue-tint: #27344a;
+  --red-tint: #4a2a23;
+  --yellow-tint: #3d3322;
+  --green-tint: #1e3328;
+  --on-accent: #1b1916;
+  --shadow: #000000;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--paper);
+  --color-foreground: var(--ink);
   --color-card: var(--card);
-  --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
+  --color-accent: var(--blue);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-paper: var(--paper);
+  --color-brand-blue: var(--blue);
+  --color-brand-red: var(--red);
+  --color-brand-yellow: var(--yellow);
+  --color-brand-green: var(--green);
+  --color-blue-tint: var(--blue-tint);
+  --color-red-tint: var(--red-tint);
+  --color-yellow-tint: var(--yellow-tint);
+  --color-green-tint: var(--green-tint);
+  --color-on-accent: var(--on-accent);
+
+  /* Re-skin the grays and status colors the pages already use, so every
+     screen picks up the new palette without touching each class. */
+  --color-zinc-50: var(--card);
+  --color-zinc-100: var(--line);
+  --color-zinc-200: var(--line);
+  --color-zinc-300: var(--ink-faint);
+  --color-zinc-400: var(--ink-faint);
+  --color-zinc-500: var(--ink-soft);
+  --color-zinc-600: var(--ink-soft);
+  --color-zinc-700: var(--ink-faint);
+  --color-zinc-800: var(--line);
+  --color-zinc-900: var(--card);
+  --color-zinc-950: var(--paper);
+  --color-emerald-400: var(--blue);
+  --color-emerald-500: var(--blue);
+  --color-emerald-600: var(--blue);
+  --color-red-400: var(--red);
+  --color-red-500: var(--red);
+  --color-red-600: var(--red);
+  --color-amber-400: var(--yellow);
+  --color-amber-600: var(--ink-soft);
+  --color-white: var(--on-accent);
+
+  --font-sans: var(--font-dm-sans);
+  --font-hand: var(--font-shantell);
+  --font-note: var(--font-caveat);
+  --font-logo: var(--font-shrikhand);
 }
 
 html {
   /* No double-tap-to-zoom delay; pinch zoom still works. */
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--paper);
+  /* Faint graph paper, like a notebook page. */
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 22px 22px;
+  background-attachment: fixed;
+  color: var(--ink);
   -webkit-tap-highlight-color: transparent;
   /* Stops the whole app from rubber-banding like a web page. */
   overscroll-behavior: none;
+}
+
+/* Headings in the marker-pen face; numbers and body stay in DM Sans. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-shantell);
+  font-weight: 700;
+}
+
+/* Penny keeps her dark ink on dark paper, so give her a cream sticker edge. */
+[data-theme="dark"] .penny-sticker {
+  filter: drop-shadow(1.5px 0 0 var(--ink)) drop-shadow(-1.5px 0 0 var(--ink)) drop-shadow(0 1.5px 0 var(--ink))
+    drop-shadow(0 -1.5px 0 var(--ink));
 }
 
 /* Buttons and tabs shouldn't select text or pop up the iOS link preview. */
@@ -47,25 +139,63 @@ nav a,
   -webkit-touch-callout: none;
 }
 
-/* Shared building blocks, kept here so pages stay readable. */
+/* Hand-drawn box: the outline, fill and hard shadow live on a layer behind the
+   content that gets a slight wobble (#ink-wobble in app/layout.tsx), so edges
+   look inked by hand while text stays crisp. Tune with the --ink-* variables. */
+@utility ink {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--ink-fill, var(--card));
+    border: var(--ink-width, 2.5px) solid var(--ink);
+    border-radius: var(--ink-radius, 20px);
+    box-shadow: var(--ink-shadow, 4px) var(--ink-shadow, 4px) 0 var(--shadow);
+    filter: url(#ink-wobble);
+    pointer-events: none;
+  }
+}
+
+/* Buttons: inked box, marker-pen label, presses down into its shadow. */
+@utility btn {
+  @apply ink inline-flex items-center justify-center px-4 py-3 text-base font-bold disabled:opacity-50;
+  font-family: var(--font-shantell);
+  --ink-radius: 14px;
+  --ink-shadow: 3px;
+  &:active:not(:disabled) {
+    transform: translate(3px, 3px);
+    --ink-shadow: 0px;
+  }
+}
+
 @layer components {
   .card {
-    @apply rounded-2xl bg-card p-4 shadow-sm;
+    @apply ink p-4;
   }
-  /* 16px+ text stops iOS Safari from zooming in on focus. */
+  /* 16px+ text stops iOS Safari from zooming in on focus. Inputs stay clean. */
   .input {
-    @apply w-full rounded-xl border border-zinc-300 bg-card px-4 py-3 text-base outline-none focus:border-accent dark:border-zinc-700;
+    @apply w-full rounded-xl border-2 border-ink/70 bg-paper px-4 py-3 text-base outline-none focus:border-brand-blue;
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-zinc-500;
+    @apply mb-1 block text-sm font-semibold text-ink-soft;
   }
   .btn-primary {
-    @apply rounded-xl bg-accent px-4 py-3 text-base font-semibold text-white active:opacity-80 disabled:opacity-50 dark:text-zinc-950;
+    @apply btn text-on-accent;
+    --ink-fill: var(--blue);
   }
   .btn-secondary {
-    @apply rounded-xl bg-zinc-200 px-4 py-3 text-base font-semibold active:opacity-80 dark:bg-zinc-800;
+    @apply btn text-ink;
+    --ink-fill: var(--card);
   }
   .btn-danger {
-    @apply rounded-xl px-4 py-3 text-base font-semibold text-red-600 active:opacity-80;
+    @apply btn text-brand-red;
+    --ink-fill: var(--red-tint);
+  }
+  .btn-savings {
+    @apply btn text-ink;
+    --ink-fill: var(--yellow);
   }
 }

@@ -4,7 +4,7 @@
 // Kept deliberately small. Pages are never cached (they contain your data and
 // must always be fresh); only build assets and icons are, plus an offline page.
 
-const CACHE = "budget-v1";
+const CACHE = "penny-v1";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
