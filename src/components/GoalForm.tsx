@@ -34,7 +34,7 @@ export default function GoalForm({ goal }: { goal?: SavingsGoal }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="target_amount">Goal amount</label>
           <input
             id="target_amount"
@@ -46,7 +46,7 @@ export default function GoalForm({ goal }: { goal?: SavingsGoal }) {
             className="input"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="target_date">By (optional)</label>
           <input id="target_date" name="target_date" type="date" defaultValue={goal?.target_date ?? ""} className="input" />
         </div>

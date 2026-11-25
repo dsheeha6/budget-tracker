@@ -97,6 +97,10 @@ html {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   color-scheme: light;
+  /* Home-screen app on iPhone: with the translucent status bar, iOS sizes the
+     page short by the status bar's height, leaving a strip of paper under the
+     tab bar. Growing the page by that height puts the tab bar on the bottom edge. */
+  min-height: calc(100% + env(safe-area-inset-top));
 }
 [data-theme="dark"] {
   color-scheme: dark;
@@ -178,6 +182,20 @@ nav a,
   /* 16px+ text stops iOS Safari from zooming in on focus. Inputs stay clean. */
   .input {
     @apply w-full rounded-xl border-2 border-ink/70 bg-paper px-4 py-3 text-base outline-none focus:border-brand-blue;
+  }
+  /* iOS draws date fields as native controls with their own minimum width,
+     which ignores the column they sit in and runs off the card. Draw them like
+     the other inputs instead: the column's width, the same height. */
+  .input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    min-width: 0;
+    min-height: calc(3rem + 4px); /* text line + py-3 + border, like text inputs */
+    text-align: left;
+  }
+  .input[type="date"]::-webkit-date-and-time-value {
+    text-align: left;
   }
   .label {
     @apply mb-1 block text-sm font-semibold text-ink-soft;

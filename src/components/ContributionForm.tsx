@@ -34,11 +34,11 @@ export default function ContributionForm({ goalId, defaultDate }: { goalId: stri
       </div>
 
       <div className="flex gap-3">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <label className="label" htmlFor="amount">Amount</label>
           <input id="amount" name="amount" inputMode="decimal" required placeholder="$100" autoComplete="off" className="input" />
         </div>
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <label className="label" htmlFor="date">Date</label>
           <input id="date" name="date" type="date" defaultValue={defaultDate} className="input" />
         </div>
